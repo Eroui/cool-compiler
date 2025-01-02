@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"strconv"
+	"strings"
 	"unicode"
 )
 
@@ -23,6 +25,11 @@ const (
 	WHILE
 	CASE
 	ESAC
+
+	// Data types
+	STR_CONST
+	BOOL_CONST
+	INT_CONST
 
 	// Identifiers
 	TYPEID
@@ -101,6 +108,57 @@ func (l *Lexer) skipWhiteSpace() {
 	for unicode.IsSpace(l.char) {
 		l.readChar()
 	}
+}
+
+func (l *Lexer) readNumber() string {
+	var sb strings.Builder
+	for unicode.IsDigit(l.char) {
+		sb.WriteRune(l.char)
+		l.readChar()
+	}
+	return sb.String()
+}
+
+func (l *Lexer) readString() (string, error) {
+	var sb strings.Builder
+	l.readChar()
+	for l.char != '"' {
+		if l.char == 0 {
+			return "", fmt.Errorf("EOF in string constant")
+		}
+		if l.char == '\n' {
+			return "", fmt.Errorf("Unterminitaed string constant")
+		}
+
+		if l.char == '\\' {
+			l.readChar()
+			switch l.char {
+			case 'b':
+				sb.WriteRune('\b')
+			case 't':
+				sb.WriteRune('\t')
+			case 'n':
+				sb.WriteRune('\n')
+			case 'f':
+				sb.WriteRune('\f')
+			case '\\':
+				sb.WriteRune('\\')
+			case '"':
+				sb.WriteRune('"')
+			case '0':
+				sb.WriteRune(0)
+			default:
+				sb.WriteRune(l.char)
+			}
+		} else {
+			sb.WriteRune(l.char)
+		}
+
+		l.readChar()
+	}
+
+	l.readChar()
+	return sb.String(), nil
 }
 
 func (l *Lexer) NextToken() Token {
@@ -183,7 +241,24 @@ func (l *Lexer) NextToken() Token {
 			l.readChar()
 			l.readChar()
 		}
-
+	case l.char == '"':
+		str, err := l.readString()
+		if err != nil {
+			tok.Type = ERROR
+			tok.Literal = err.Error()
+		} else {
+			tok.Type = STR_CONST
+			tok.Literal = str
+		}
+	case unicode.IsDigit(l.char):
+		num := l.readNumber()
+		if _, err := strconv.Atoi(num); err != nil {
+			tok.Type = ERROR
+			tok.Literal = "Number out of range"
+		} else {
+			tok.Type = INT_CONST
+			tok.Literal = num
+		}
 	default:
 		tok.Type = ERROR
 		tok.Literal = fmt.Sprintf("Unexpected character: %c", l.char)
