@@ -119,6 +119,23 @@ func (l *Lexer) readNumber() string {
 	return sb.String()
 }
 
+func isIdentifierStart(char rune) bool {
+	return unicode.IsLetter(char) || char == '_'
+}
+
+func isIdentifierPart(char rune) bool {
+	return isIdentifierStart(char) || unicode.IsDigit(char)
+}
+
+func (l *Lexer) readIdentifier() string {
+	var sb strings.Builder
+	for isIdentifierPart(l.char) {
+		sb.WriteRune(l.char)
+		l.readChar()
+	}
+	return sb.String()
+}
+
 func (l *Lexer) readString() (string, error) {
 	var sb strings.Builder
 	l.readChar()
@@ -258,6 +275,37 @@ func (l *Lexer) NextToken() Token {
 		} else {
 			tok.Type = INT_CONST
 			tok.Literal = num
+		}
+	case isIdentifierStart(l.char):
+		identifier := l.readIdentifier()
+		tok.Literal = identifier
+		switch strings.ToLower(identifier) {
+		// Handle keywords
+		case "class":
+			tok.Type = CLASS
+		case "if":
+			tok.Type = IF
+		case "fi":
+			tok.Type = FI
+		case "else":
+			tok.Type = ELSE
+		case "then":
+			tok.Type = THEN
+		case "case":
+			tok.Type = CASE
+		case "esca":
+			tok.Type = ESAC
+		// Handle boolean const
+		case "true", "false":
+			tok.Type = BOOL_CONST
+		default:
+			if unicode.IsUpper(rune(identifier[0])) {
+				// Types are all starting with an upper case.
+				tok.Type = TYPEID
+			} else {
+				// If not a type then its an object.
+				tok.Type = OBJECTID
+			}
 		}
 	default:
 		tok.Type = ERROR
