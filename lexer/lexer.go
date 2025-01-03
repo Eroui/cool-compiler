@@ -49,6 +49,8 @@ const (
 	LBRACE // {
 	RBRACE // }
 	SEMI   // ;
+	COLON  // :
+	COMMA  // ,
 )
 
 // Token represents a lexical token with its type, value, and position.
@@ -209,6 +211,10 @@ func (l *Lexer) NextToken() Token {
 	case l.char == ';':
 		tok.Type = SEMI
 		tok.Literal = ";"
+		l.readChar()
+	case l.char == ':':
+		tok.Type = COLON
+		tok.Literal = ":"
 		l.readChar()
 	case l.char == '+':
 		tok.Type = PLUS

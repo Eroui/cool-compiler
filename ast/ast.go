@@ -2,8 +2,6 @@ package ast
 
 import (
 	"cool-compiler/lexer"
-
-	"github.com/go-playground/locales/wae_CH"
 )
 
 type Node interface {
@@ -53,7 +51,7 @@ func (p *Program) TokenLiteral() string {
 type Class struct {
 	Token    lexer.Token
 	Name     *TypeIdentifier
-	Features []*Feature
+	Features []Feature
 	Filename string
 }
 
