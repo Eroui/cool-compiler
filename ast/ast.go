@@ -49,6 +49,7 @@ func (p *Program) TokenLiteral() string {
 type Class struct {
 	Token    lexer.Token
 	Name     *TypeIdentifier
+	Features []Feature
 	Filename string
 }
 
