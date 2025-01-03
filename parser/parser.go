@@ -4,6 +4,7 @@ import (
 	"cool-compiler/ast"
 	"cool-compiler/lexer"
 	"fmt"
+	"strconv"
 )
 
 type Parser struct {
@@ -189,8 +190,6 @@ func (p *Parser) parseAttribute() *ast.Attribute {
 	return attr
 }
 
-func (p *Parser) parseExpression() ast.Expression { return nil }
-
 func (p *Parser) parseFormals() []*ast.Formal {
 	formals := []*ast.Formal{}
 
@@ -225,4 +224,130 @@ func (p *Parser) parseFormals() []*ast.Formal {
 	}
 
 	return formals
+}
+
+func (p *Parser) parseExpression() ast.Expression {
+	switch p.curToken.Type {
+	case lexer.INT_CONST:
+		return p.parseIntegerLiteral()
+	case lexer.STR_CONST:
+		return p.parseStringLiteral()
+	case lexer.BOOL_CONST:
+		return p.parseBooleanLiteral()
+	case lexer.OBJECTID:
+		if p.peekTokenIs(lexer.ASSIGN) {
+			return p.parseAssignment()
+		}
+		return p.parseIdentifier()
+	case lexer.IF:
+		return p.parseIfExpression()
+	}
+
+	return nil
+}
+
+func (p *Parser) parseIntegerLiteral() *ast.IntegerLiteral {
+	lit := &ast.IntegerLiteral{Token: p.curToken}
+
+	value, err := strconv.ParseInt(p.curToken.Literal, 10, 64)
+	if err != nil {
+		p.errors = append(p.errors, fmt.Sprintf("could not parse %q as integer", p.curToken.Literal))
+		return nil
+	}
+
+	lit.Value = value
+	p.nextToken()
+	return lit
+}
+
+func (p *Parser) parseStringLiteral() *ast.StringLiteral {
+	lit := &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
+	p.nextToken()
+	return lit
+}
+
+func (p *Parser) parseBooleanLiteral() *ast.BooleanLiteral {
+	lit := &ast.BooleanLiteral{Token: p.curToken, Value: p.curToken.Literal == "true"}
+	p.nextToken()
+	return lit
+}
+
+func (p *Parser) parseAssignment() *ast.Assignment {
+	assign := &ast.Assignment{Token: p.curToken}
+	assign.Identifier = &ast.ObjectIdentifier{Token: p.curToken, Value: p.curToken.Literal}
+
+	if !p.expectAndPeek(lexer.ASSIGN) {
+		return nil
+	}
+
+	p.nextToken()
+
+	assign.Expression = p.parseExpression()
+
+	if p.peekTokenIs(lexer.SEMI) {
+		p.nextToken()
+	}
+
+	return assign
+}
+
+func (p *Parser) parseIdentifier() *ast.ObjectIdentifier {
+	identifier := &ast.ObjectIdentifier{Token: p.curToken, Value: p.curToken.Literal}
+	p.nextToken()
+	return identifier
+}
+
+func (p *Parser) parseIfExpression() *ast.IfExpression {
+	ie := &ast.IfExpression{Token: p.curToken}
+	p.nextToken()
+	ie.Condition = p.parseExpression()
+
+	if !p.expectAndPeek(lexer.THEN) {
+		return nil
+	}
+
+	p.nextToken()
+	ie.Consequence = p.parseExpression()
+
+	if !p.expectAndPeek(lexer.THEN) {
+		return nil
+	}
+
+	p.nextToken()
+	ie.Alternative = p.parseExpression()
+
+	if !p.expectAndPeek(lexer.FI) {
+		return nil
+	}
+
+	if !p.expectAndPeek(lexer.SEMI) {
+		return nil
+	}
+
+	return ie
+}
+
+func (p *Parser) parseWhileExpression() *ast.WhileExpression {
+	we := &ast.WhileExpression{Token: p.curToken}
+
+	p.nextToken()
+	we.Condition = p.parseExpression()
+
+	if !p.expectAndPeek(lexer.LOOP) {
+		return nil
+	}
+
+	p.nextToken()
+
+	we.Body = p.parseExpression()
+
+	if !p.expectAndPeek(lexer.POOL) {
+		return nil
+	}
+
+	if !p.expectAndPeek(lexer.SEMI) {
+		return nil
+	}
+
+	return we
 }

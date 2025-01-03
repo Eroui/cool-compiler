@@ -25,6 +25,8 @@ const (
 	WHILE
 	CASE
 	ESAC
+	LOOP
+	POOL
 
 	// Data types
 	STR_CONST
@@ -301,6 +303,12 @@ func (l *Lexer) NextToken() Token {
 			tok.Type = CASE
 		case "esca":
 			tok.Type = ESAC
+		case "while":
+			tok.Type = WHILE
+		case "loop":
+			tok.Type = LOOP
+		case "pool":
+			tok.Type = POOL
 		// Handle boolean const
 		case "true", "false":
 			tok.Type = BOOL_CONST

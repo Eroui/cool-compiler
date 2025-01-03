@@ -36,6 +36,7 @@ type ObjectIdentifier struct {
 }
 
 func (oi *ObjectIdentifier) TokenLiteral() string { return oi.Token.Literal }
+func (oi *ObjectIdentifier) expressionNode()      {}
 
 type Program struct {
 	Classes []Class
