@@ -218,6 +218,10 @@ func (l *Lexer) NextToken() Token {
 		tok.Type = COLON
 		tok.Literal = ":"
 		l.readChar()
+	case l.char == ',':
+		tok.Type = COMMA
+		tok.Literal = ","
+		l.readChar()
 	case l.char == '+':
 		tok.Type = PLUS
 		tok.Literal = "+"
